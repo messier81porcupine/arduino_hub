@@ -3,8 +3,8 @@
 #include <RTClib.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#include <RH_ASK.h>
-#include <SPI.h>
+#include <RCSwitch.h>
+
 
 // LCD
 const int rs = 3, e = 4, db4 = 5, db5 = 6, db6 = 7, db7 = 8;  // set pins used by the LCD
@@ -13,7 +13,7 @@ int minBrightness = 3;                                        // limits the mapp
 int maxBrightness = 100;                                      // limits the mapping of ambientBrightness when setting the LCD backlight
 
 // DHT11 Temp and Humidity Sensor
-const int DHTPin = 2;
+const int DHTPin = 11;
 DHT_Unified dht(DHTPin, DHT11);
 
 // Servo
@@ -80,11 +80,13 @@ unsigned long prevLCDoutputTime;         // time of last LCD output
 int count = 1;  // counts how many times the sensor has been run
 
 // Radio
-RH_ASK radio;
+RCSwitch mySwitch = RCSwitch();
 
 void setup() {
   Serial.begin(9600);
   dht.begin();
+
+  mySwitch.enableReceive(digitalPinToInterrupt(2));
 
   // Set Pin Modes
   pinMode(buttonPin, INPUT);
@@ -116,14 +118,7 @@ void setup() {
   // Configure LCD backlight
   ambientBrightness = analogRead(photoTransPin);
   analogWrite(LCDBacklightPin, map(ambientBrightness, 0, 1023, minBrightness, 255));
-  
-  // Speed of 2000 bits per second
-  // Use pin 11 for reception
-  // Use pin 12 for transmission
-  
-  if (!radio.init()){
-        Serial.println("Radio module failed to initialize");
-  }
+
 
   // Display Welcome Message
   lcd.begin(16, 2);
@@ -161,6 +156,7 @@ void loop() {
   setMoistureLED();
   updateDHT();
   now = updateRTC();
+  receiveData();
 
   outputLCD(now);
 
@@ -172,15 +168,12 @@ void loop() {
 
 // Methods
 void receiveData(){
-  // Create a 32 byte char buffer
-  uint8_t receive_buffer[32];
-  uint8_t buflen = sizeof(receive_buffer);
- 
-  // If data is available, print it
-  if (radio.recv(receive_buffer, &buflen)){
-    Serial.print("Message: ");
-    Serial.println((char*)receive_buffer);         
-  }
+  if (mySwitch.available()) {
+      Serial.print("Received ");
+      Serial.print( mySwitch.getReceivedValue() );
+      Serial.print(" ");
+      Serial.println(count);
+    }
 }
 void setBrightness() {  // read phototransistor and set brightness level accordingly
   if (currentMillis - prevTransTime > transInterval || count == 1 || buttonState == 1) {

@@ -1,7 +1,7 @@
 #include <DHT.h>
 #include <DHT_U.h>
-#include <RH_ASK.h>
-#include <SPI.h>
+#include <RCSwitch.h>
+
 
 // DHT11 Temp and Humidity Sensor
 const int DHTPin = 2;
@@ -20,19 +20,14 @@ unsigned long prevDHTTime;            // time of last temperature reading
 int count = 1;
 
 // Radio
-RH_ASK radio(2000, 11, 12);
+RCSwitch mySwitch = RCSwitch();
 
 void setup() {
   Serial.begin(9600);
   dht.begin();
 
-    // Speed of 2000 bits per second
-    // Use pin 11 for reception
-    // Use pin 12 for transmission
-    
-    if (!radio.init()){
-         Serial.println("Radio module failed to initialize");
-    }
+  mySwitch.enableTransmit(10);
+
 }
 
 void loop() {
@@ -42,17 +37,13 @@ void loop() {
     count = 2;
   }
   updateDHT();
+  transmitData();
   count ++;
 }
 void transmitData(){
-    // Create
-    const char *msg = "Hello World";
-
-    radio.send((uint8_t*)msg, strlen(msg));
-    radio.waitPacketSent();
- 
-    delay(1000);
-    Serial.println("Data Sent");
+  mySwitch.send(8, 24);
+  Serial.println("Sent ig");
+  delay(1000);
 }
 void updateDHT() {  // read humidity and temperature from DHT sensor
   if (currentMillis - prevDHTTime > DHTInterval || count == 1) {
