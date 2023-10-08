@@ -16,9 +16,6 @@ int maxBrightness = 100;                                      // limits the mapp
 const int DHTPin = 11;
 DHT_Unified dht(DHTPin, DHT11);
 
-// Servo
-// Servo servo; // create Servo object
-// int angle; // angle of the servo motor
 
 // RTC
 RTC_DS3231 rtc;  // create real time clock object
@@ -26,8 +23,6 @@ char daysOfTheWeek[7][12] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thurs
 
 // Pins
 const int LCDBacklightPin = 9;  // setting the LCD backlight/brightness
-
-// const int servoPin = 10;
 
 const int SDArtc = A4;
 const int SCLrtc = A5;
@@ -53,6 +48,9 @@ float tempC;        // temp reading from DHT sensor
 float RTCTemp;      // temp reading from RTC
 float leveledTemp;  // avg of tempC + rtc temp - balances out the readings ¿use this? idk
 
+float outHumidity;
+float outTemp;
+
 int buttonState;    // state of button on pin 12
 
 // Time
@@ -77,16 +75,23 @@ unsigned long prevRTCtime;                // time of last rtc output
 unsigned long LCDOutputInterval = 5000;  // time to wait between updating the LCD // 5 seconds
 unsigned long prevLCDoutputTime;         // time of last LCD output
 
+unsigned long radioInterval = 200; // interval for transmitting data // 0.5 seconds
+unsigned long prevRadioTime; // time of last transmission
+
 int count = 1;  // counts how many times the sensor has been run
 
 // Radio
-RCSwitch mySwitch = RCSwitch();
+RCSwitch radio = RCSwitch();
+int transmittedVal; // used to store the most recently transmitted value
+int desiredVal; // transmittedVal - 48 is the value that was transmitted from the Nano (idk why the values are weird like this)
 
 void setup() {
   Serial.begin(9600);
   dht.begin();
 
-  mySwitch.enableReceive(digitalPinToInterrupt(2));
+  delay(100);
+  radio.enableReceive(digitalPinToInterrupt(2));
+  delay(100);
 
   // Set Pin Modes
   pinMode(buttonPin, INPUT);
@@ -96,8 +101,6 @@ void setup() {
   pinMode(moisturePowerPin, OUTPUT);
   pinMode(LCDBacklightPin, OUTPUT);
   pinMode(DHTPin, INPUT);
-
-  // servo.attach(servoPin); // initialize the servo motor
 
   // Configure RTC
   if (!rtc.begin()) {
@@ -160,7 +163,7 @@ void loop() {
 
   outputLCD(now);
 
-  // analogWrite(servoPin, 90);
+
 
   count++;
 }
@@ -168,12 +171,18 @@ void loop() {
 
 // Methods
 void receiveData(){
-  if (mySwitch.available()) {
-      Serial.print("Received ");
-      Serial.print( mySwitch.getReceivedValue() );
-      Serial.print(" ");
-      Serial.println(count);
+  if (currentMillis - prevRadioTime > radioInterval ) {
+    prevRadioTime = currentMillis;
+    // Serial.println(radio.available());
+    if (radio.available()) {
+      Serial.print("\nReceived Raw: ");
+      transmittedVal = radio.getReceivedValue();
+      Serial.println(transmittedVal);
+      desiredVal = transmittedVal - 48;
+
     }
+    radio.resetAvailable();
+  }
 }
 void setBrightness() {  // read phototransistor and set brightness level accordingly
   if (currentMillis - prevTransTime > transInterval || count == 1 || buttonState == 1) {
