@@ -12,7 +12,11 @@ float humidity;
 String str_humidity; // used for data transmission
 String str_tempC; // used for data transmission
 
-
+// Radio
+RCSwitch radio = RCSwitch();
+String data; // data to send 
+int currentVal; // the value of the two numbers to be transmitted - helps with reconstructing on the receiver
+int tempPeriod; // store location of decimal in temp data
 
 // Time
 unsigned long currentMillis = millis();  // stores the current time since startup in milliseconds
@@ -24,12 +28,6 @@ unsigned long radioInterval = DHTInterval/2; // interval for transmitting data -
 unsigned long prevRadioTime; // time of last transmission
 
 int count = 1;
-
-// Radio
-RCSwitch radio = RCSwitch();
-String data; // data to send 
-int currentVal; // the value of the two numbers to be transmitted - helps with reconstructing on the receiver
-int tempPeriod; // store location of decimal in temp data
 
 void setup() {
   Serial.begin(9600);
@@ -56,14 +54,19 @@ void transmitData(){
     prevRadioTime = currentMillis;
     
     Serial.println("\nSending...");
+
+    radio.send(111, 24); // signals the begining of temp data and end of humidity data
     radio.send(int(round(tempC)), 24);
     Serial.println(int(round(tempC)));
-
+    radio.send(333, 24); // signals the end of temp data and beginning of humidity data
+    
     delay(100);
 
+    radio.send(333, 24); // signals the beginning of humidity data and end of temp data
     radio.send(int(round(humidity)), 24); 
     Serial.println(int(round(humidity)));
-
+    radio.send(111, 24); // signals the end of humidity data and beginning of temp data
+    
     Serial.println("\nSent ig");
   }
 }

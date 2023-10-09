@@ -16,6 +16,11 @@ int maxBrightness = 100;                                      // limits the mapp
 const int DHTPin = 11;
 DHT_Unified dht(DHTPin, DHT11);
 
+// Radio
+RCSwitch radio = RCSwitch();
+int receivedVal; // used to store the most recently transmitted value
+int receivingMode = 0; // used to know which data is being recieved 0 = Temp; 1 = Humidity
+
 
 // RTC
 RTC_DS3231 rtc;  // create real time clock object
@@ -48,8 +53,8 @@ float tempC;        // temp reading from DHT sensor
 float RTCTemp;      // temp reading from RTC
 float leveledTemp;  // avg of tempC + rtc temp - balances out the readings ¿use this? idk
 
-float outHumidity;
-float outTemp;
+int outHumidity; // humidity reading recieved by the radio - outdoor from Nano Every
+int outTemp; // temp reading recieved by the radio - outdoor from Nano Every
 
 int buttonState;    // state of button on pin 12
 
@@ -79,11 +84,6 @@ unsigned long radioInterval = 200; // interval for transmitting data // 0.5 seco
 unsigned long prevRadioTime; // time of last transmission
 
 int count = 1;  // counts how many times the sensor has been run
-
-// Radio
-RCSwitch radio = RCSwitch();
-int receivedVal; // used to store the most recently transmitted value
-// int desiredVal; // receivedVal - 48 is the value that was transmitted from the Nano (idk why the values are weird like this)
 
 
 void setup() {
@@ -175,14 +175,28 @@ void receiveData(){
   if (currentMillis - prevRadioTime > radioInterval ) {
     prevRadioTime = currentMillis;
 
-    Serial.println(radio.available());
     if (radio.available()) {
       Serial.print("\nReceived: ");
       receivedVal = radio.getReceivedValue();
       Serial.println(receivedVal);
-      // desiredVal = receivedVal - 48;
 
     }
+    // set receiving mode based on what data is received
+    if (receivedVal == 111){
+      receivingMode = 0; // temp
+    }
+    else if (receivedVal == 333){
+      receivingMode = 1; // humidity
+    }
+    else { // if not 111(tmp) or 333(humid) then it must be normal data
+      if (receivingMode == 0){ // save that data into the appropriate variable based on the most recent recieved code
+        outTemp = receivedVal;
+      }
+      else if (receivingMode == 1){
+        outHumidity = receivedVal;
+      }
+    }
+
     radio.resetAvailable();
   }
 }
@@ -295,6 +309,11 @@ void outputLCD(DateTime now) {  // output all data onto LCD
     prevLCDoutputTime = currentMillis;
     lcd.clear();
     lcd.setCursor(0, 0);
+
+    Serial.println(outTemp);
+    Serial.println(outHumidity);
+    Serial.println("Temp Humidity - Outdoor");
+
 
     // Time
     if (now.hour() < 10) {
