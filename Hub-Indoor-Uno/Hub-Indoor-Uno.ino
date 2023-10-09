@@ -82,8 +82,9 @@ int count = 1;  // counts how many times the sensor has been run
 
 // Radio
 RCSwitch radio = RCSwitch();
-int transmittedVal; // used to store the most recently transmitted value
-int desiredVal; // transmittedVal - 48 is the value that was transmitted from the Nano (idk why the values are weird like this)
+int receivedVal; // used to store the most recently transmitted value
+// int desiredVal; // receivedVal - 48 is the value that was transmitted from the Nano (idk why the values are weird like this)
+
 
 void setup() {
   Serial.begin(9600);
@@ -173,12 +174,13 @@ void loop() {
 void receiveData(){
   if (currentMillis - prevRadioTime > radioInterval ) {
     prevRadioTime = currentMillis;
-    // Serial.println(radio.available());
+
+    Serial.println(radio.available());
     if (radio.available()) {
-      Serial.print("\nReceived Raw: ");
-      transmittedVal = radio.getReceivedValue();
-      Serial.println(transmittedVal);
-      desiredVal = transmittedVal - 48;
+      Serial.print("\nReceived: ");
+      receivedVal = radio.getReceivedValue();
+      Serial.println(receivedVal);
+      // desiredVal = receivedVal - 48;
 
     }
     radio.resetAvailable();
@@ -323,7 +325,7 @@ void outputLCD(DateTime now) {  // output all data onto LCD
 
     // Humidity
     lcd.setCursor(12, 1);
-    lcd.print(int(humidity));
+    lcd.print(round(humidity));
     lcd.print("%");
   }
 }

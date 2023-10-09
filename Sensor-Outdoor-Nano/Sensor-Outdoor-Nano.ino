@@ -17,7 +17,7 @@ String str_tempC; // used for data transmission
 // Time
 unsigned long currentMillis = millis();  // stores the current time since startup in milliseconds
 
-unsigned long DHTInterval = 5000;  // interval for checking the thermometer // 1 minute
+unsigned long DHTInterval = 10000;  // interval for checking the thermometer // 1 minute
 unsigned long prevDHTTime;            // time of last temperature reading
 
 unsigned long radioInterval = DHTInterval/2; // interval for transmitting data - set to half of the DHTinterval 
@@ -52,55 +52,18 @@ void loop() {
   count ++;
 }
 void transmitData(){
-  if (currentMillis - prevRadioTime > 10000 ) {
+  if (currentMillis - prevRadioTime > radioInterval ) {
     prevRadioTime = currentMillis;
-
-    //sends data two digits at a time
-    Serial.println(tempC);
-    //Integer of temp
-    for (int i = 0; i < str_tempC.length(); i ++){ // loop through temp
-      if (str_tempC[i] == "."){ // find the period
-        tempPeriod = i; // store this value
-        for (int j = 0; j < i; j ++){ // loop through everything before the period
-          currentVal += str_tempC[j]; // add that to a string to be transmitted
-        }
-      }
-    }
-    radio.send(int(currentVal)); // send integer part of temp
-    Serial.println(currentVal);
-    Serial.println(int(currentVal));
-    currentVal = 0;
-
-    //Decimal of temp
-    for (int i = tempPeriod; i < str_tempC.length(); i ++){ // loop through temp starting at the period
-      currentVal += str_tempC[i]; // add to a string to be transmitted
-    }
-    radio.send(int(currentVal)); // send the decimal part of temp
-    Serial.println(currentVal);
-    Serial.println(int(currentVal));
-    currentVal = 0;
-
-    //Again but for humidity now - doesnt have decimal
-    Serial.println(humidity);
-
-    for (int i = 0; i < str_humidity.length(); i ++){ // loop through humidity
-      if (str_humidity[i] == "."){ // find the period
-        for (int j = 0; j < i; j ++){ // loop through everything before the period
-          currentVal += str_humidity[j]; // add that to a string to be transmitted
-        }
-      }
-    }
-    radio.send(int(currentVal)); // send humidity
-    Serial.println(currentVal);
-    Serial.println(int(currentVal));
-    currentVal = 0;
     
-    //sends data one digit at a time
-    // for (int i = 0; i < data.length(); i ++){
-    //   radio.send(int(data[i]), 24);
-    //   Serial.println(int(data[i]));
-    //   delay(200);
-    // }
+    Serial.println("\nSending...");
+    radio.send(int(round(tempC)), 24);
+    Serial.println(int(round(tempC)));
+
+    delay(100);
+
+    radio.send(int(round(humidity)), 24); 
+    Serial.println(int(round(humidity)));
+
     Serial.println("\nSent ig");
   }
 }
@@ -133,11 +96,6 @@ void updateDHT() {  // read humidity and temperature from DHT sensor
     }
     digitalWrite(DHTPowerPin, 0);
 
-    // Sava data in prep for transmission
-    str_tempC = String(tempC);
-    str_humidity = String(humidity);
 
-    data = str_tempC + "," + str_humidity;
-    // Serial.println(data);
   }
 }
