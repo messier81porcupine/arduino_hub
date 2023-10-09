@@ -19,7 +19,7 @@ DHT_Unified dht(DHTPin, DHT11);
 // Radio
 RCSwitch radio = RCSwitch();
 int receivedVal; // used to store the most recently transmitted value
-int receivingMode = 0; // used to know which data is being recieved 0 = Temp; 1 = Humidity
+int receivingMode = -1; // used to know which data is being recieved 0 = Temp; 1 = Humidity
 int loops = 10; // times to check for new data per call - separated by delayMS
 unsigned long delayMS = 500; 
 // RTC
@@ -53,8 +53,8 @@ float tempC;        // temp reading from DHT sensor
 float RTCTemp;      // temp reading from RTC
 float leveledTemp;  // avg of tempC + rtc temp - balances out the readings ¿use this? idk
 
-int outHumidity; // humidity reading recieved by the radio - outdoor from Nano Every
-int outTemp; // temp reading recieved by the radio - outdoor from Nano Every
+int outHumidity = -1000; // humidity reading recieved by the radio - outdoor from Nano Every - 
+int outTemp = -1000; // temp reading recieved by the radio - outdoor from Nano Every - -1000 is the preset so that the loading animation will play
 
 int buttonState;    // state of button on pin 12
 
@@ -338,7 +338,13 @@ void outputLCD(DateTime now) {  // output all data onto LCD
 
     // Temp OUT
     lcd.setCursor(7, 0);
-    lcd.print(round(outTemp));
+    if (outTemp == -1000){
+      lcd.print("-");
+    }
+    else {
+      lcd.print(round(outTemp));
+    }
+    
     lcd.print("C");
 
     // Moisture
@@ -359,7 +365,13 @@ void outputLCD(DateTime now) {  // output all data onto LCD
 
     // Humidity OUT
     lcd.setCursor(7, 1);
-    lcd.print(round(outHumidity));
+    if (outHumidity == -1000){
+      lcd.print("-");
+    }
+    else{
+      lcd.print(round(outHumidity));
+    }
+
     lcd.print("%");
   }
 }
