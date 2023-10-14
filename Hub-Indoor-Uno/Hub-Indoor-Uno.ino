@@ -18,10 +18,10 @@ DHT_Unified dht(DHTPin, DHT11);
 
 // Radio
 RCSwitch radio = RCSwitch();
-int receivedVal; // used to store the most recently transmitted value
-int receivingMode = -1; // used to know which data is being recieved 0 = Temp; 1 = Humidity
-int loops = 10; // times to check for new data per call - separated by delayMS
-unsigned long delayMS = 500; 
+int receivedVal;         // used to store the most recently transmitted value
+int receivingMode = -1;  // used to know which data is being recieved 0 = Temp; 1 = Humidity
+int loops = 10;          // times to check for new data per call - separated by delayMS
+unsigned long delayMS = 500;
 // RTC
 RTC_DS3231 rtc;  // create real time clock object
 char daysOfTheWeek[7][12] = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
@@ -53,17 +53,17 @@ float tempC;        // temp reading from DHT sensor
 float RTCTemp;      // temp reading from RTC
 float leveledTemp;  // avg of tempC + rtc temp - balances out the readings ¿use this? idk
 
-int outHumidity = -1000; // humidity reading recieved by the radio - outdoor from Nano Every - 
-int outTemp = -1000; // temp reading recieved by the radio - outdoor from Nano Every - -1000 is the preset so that the loading animation will play
+int outHumidity = -1000;  // humidity reading recieved by the radio - outdoor from Nano Every -
+int outTemp = -1000;      // temp reading recieved by the radio - outdoor from Nano Every - -1000 is the preset so that the loading animation will play
 
-int buttonState;    // state of button on pin 12
+int buttonState;  // state of button on pin 12
 
 // Time
 DateTime now;                            // stores rtc current time
 unsigned long currentMillis = millis();  // stores the current time since startup in milliseconds
 
-unsigned long transInterval = 10000;     // interval for checking the phototransistor // 10 seconds
-unsigned long prevTransTime;             // time of last phototrans reading
+unsigned long transInterval = 10000;  // interval for checking the phototransistor // 10 seconds
+unsigned long prevTransTime;          // time of last phototrans reading
 
 unsigned long DHTInterval = 1200000;  // interval for checking the thermometer/humidity // 20 minutes
 unsigned long prevDHTTime;            // time of last temperature reading
@@ -80,8 +80,8 @@ unsigned long prevRTCtime;                // time of last rtc output
 unsigned long LCDOutputInterval = 5000;  // time to wait between updating the LCD // 5 seconds
 unsigned long prevLCDoutputTime;         // time of last LCD output
 
-unsigned long radioInterval = 30000; // interval for receiving data // 30 seconds
-unsigned long prevRadioTime; // time of last transmission
+unsigned long radioInterval = 30000;  // interval for receiving data // 30 seconds
+unsigned long prevRadioTime;          // time of last transmission
 
 int count = 1;  // counts how many times the sensor has been run
 
@@ -128,11 +128,11 @@ void setup() {
   lcd.begin(16, 2);
   lcd.clear();
   lcd.print("Welcome");
-  delay(1000);
+  delay(250);
 
   lcd.setCursor(0, 1);
   lcd.print("Hub Prototype");
-  delay(1000);
+  delay(500);
 
   // Flash the red LED
   digitalWrite(redLED, 1);
@@ -163,42 +163,44 @@ void loop() {
   receiveData();
 
   outputLCD(now);
-
-
-
   count++;
 }
 
 
 // Methods
-void receiveData(){
+void receiveData() {
   if (currentMillis - prevRadioTime > radioInterval || count == 1 || buttonState == 1) {
     prevRadioTime = currentMillis;
 
-    for (int i = 0; i < loops - 1; i ++){
-      if (radio.available()) {
-      
-      receivedVal = radio.getReceivedValue();
-      // Serial.print("\nReceived: ");
-      // Serial.println(receivedVal);
+    if (count == 1) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Searching");
+    }
 
+    for (int i = 0; i < loops - 1; i++) {
+      if (radio.available()) {
+        receivedVal = radio.getReceivedValue();
+        // Serial.print("\nReceived: ");
+        // Serial.println(receivedVal);
+      }
+      if (count == 1) {
+        lcd.setCursor(i + 9, 0);
+        lcd.print(".");
       }
       // set receiving mode based on what data is received
-      if (receivedVal == 111){
-        receivingMode = 0; // temp
-      }
-      else if (receivedVal == 333){
-        receivingMode = 1; // humidity
-      }
-      else { // if not 111(tmp) or 333(humid) then it must be normal data
-        if (receivingMode == 0){ // save that data into the appropriate variable based on the most recent recieved code
+      if (receivedVal == 111) {
+        receivingMode = 0;  // temp
+      } else if (receivedVal == 333) {
+        receivingMode = 1;         // humidity
+      } else {                     // if not 111(tmp) or 333(humid) then it must be normal data
+        if (receivingMode == 0) {  // save that data into the appropriate variable based on the most recent recieved code
           outTemp = receivedVal;
-        }
-        else if (receivingMode == 1){
+        } else if (receivingMode == 1) {
           outHumidity = receivedVal;
         }
       }
-      Serial.println("\nDHT - Outdoor");
+      Serial.println("\nRecieved\nDHT - Outdoor");
       Serial.print(outTemp);
       Serial.println("C");
       Serial.print(outHumidity);
@@ -207,7 +209,6 @@ void receiveData(){
       radio.resetAvailable();
       delay(delayMS);
     }
-    
   }
 }
 void setBrightness() {  // read phototransistor and set brightness level accordingly
@@ -227,7 +228,6 @@ void readMoistureSensor() {  // read moisture sensor and display it on lcd
     if (buttonState != 1) {
       prevTime = currentMillis;
     }
-    
 
     digitalWrite(moisturePowerPin, 1);  // power on the moisture sensor
     delay(100);
@@ -287,7 +287,6 @@ void updateDHT() {  // read humidity and temperature from DHT sensor
     leveledTemp = (tempC + RTCTemp) / 2;
     Serial.print("\nLeveled Temp: ");
     Serial.println(leveledTemp);
-    
   }
 }
 DateTime updateRTC() {  // update now variable; also rtc temp - print rtc data to serial
@@ -338,13 +337,12 @@ void outputLCD(DateTime now) {  // output all data onto LCD
 
     // Temp OUT
     lcd.setCursor(7, 0);
-    if (outTemp == -1000){
+    if (outTemp == -1000) {
       lcd.print("-");
-    }
-    else {
+    } else {
       lcd.print(round(outTemp));
     }
-    
+
     lcd.print("C");
 
     // Moisture
@@ -355,8 +353,8 @@ void outputLCD(DateTime now) {  // output all data onto LCD
     }
 
     // Ambient Brightness
-    lcd.setCursor(7, 1);
-    lcd.print(ambientBrightness);
+    // lcd.setCursor(7, 1);
+    // lcd.print(ambientBrightness);
 
     // Humidity IN
     lcd.setCursor(12, 1);
@@ -365,10 +363,9 @@ void outputLCD(DateTime now) {  // output all data onto LCD
 
     // Humidity OUT
     lcd.setCursor(7, 1);
-    if (outHumidity == -1000){
+    if (outHumidity == -1000) {
       lcd.print("-");
-    }
-    else{
+    } else {
       lcd.print(round(outHumidity));
     }
 

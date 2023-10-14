@@ -9,25 +9,26 @@ const int DHTPowerPin = 3;
 DHT_Unified dht(DHTPin, DHT11);
 float tempC;
 float humidity;
-String str_humidity; // used for data transmission
-String str_tempC; // used for data transmission
+String str_humidity;  // used for data transmission
+String str_tempC;     // used for data transmission
 
 // Radio
 RCSwitch radio = RCSwitch();
-String data; // data to send 
-int currentVal; // the value of the two numbers to be transmitted - helps with reconstructing on the receiver
-int tempPeriod; // store location of decimal in temp data
-int loops = 40; // number of times to send the data - separated by delayMS
-unsigned long delayMS = 250;
+String data;                  // data to send
+int currentVal;               // the value of the two numbers to be transmitted - helps with reconstructing on the receiver
+int tempPeriod;               // store location of decimal in temp data
+int loops = 40;               // number of times to send the whole message - separated by delayMS
+int dataReps = 3;             // number of times to repeat each sending of data
+unsigned long delayMS = 250;  // unused
 
 // Time
 unsigned long currentMillis = millis();  // stores the current time since startup in milliseconds
 
-unsigned long DHTInterval = 1200000;  // interval for checking the thermometer // 1 minute
+unsigned long DHTInterval = 1200000;  // interval for checking the thermometer // 20 minutes
 unsigned long prevDHTTime;            // time of last temperature reading
 
-unsigned long radioInterval = DHTInterval/4; // interval for transmitting data - set to a fourth of the DHTinterval 
-unsigned long prevRadioTime; // time of last transmission
+unsigned long radioInterval = DHTInterval / 4;  // interval for transmitting data - set to a fourth of the DHTinterval
+unsigned long prevRadioTime;                    // time of last transmission
 
 int count = 1;
 
@@ -36,7 +37,6 @@ void setup() {
   dht.begin();
 
   radio.enableTransmit(10);
-
 }
 
 void loop() {
@@ -44,45 +44,41 @@ void loop() {
   // Prevent count from overflowing
   if (count < 0) {
     count = 2;
-    
   }
   updateDHT();
   transmitData();
 
-  count ++;
+  count++;
 }
-void transmitData(){
-  if (currentMillis - prevRadioTime > radioInterval || count == 1 ) {
+void transmitData() {
+  if (currentMillis - prevRadioTime > radioInterval || count == 1) {
     prevRadioTime = currentMillis;
 
-    for (int i = 1; i <= loops; i ++){
-      
+    for (int i = 1; i <= loops; i++) {
+
       Serial.print("\nSending... ");
       Serial.println(i);
 
-      radio.send(111, 24); // signals the begining of temp data and end of humidity data
-      radio.send(int(round(tempC)), 24);
+      radio.send(111, 24);                // signals the begining of temp data and end of humidity data
+      radio.send(int(round(tempC)), 24);  // send temp data
       Serial.println(int(round(tempC)));
-      radio.send(333, 24); // signals the end of temp data and beginning of humidity data
-      
+      radio.send(333, 24);  // signals the end of temp data and beginning of humidity data
+
       delay(100);
 
-      radio.send(333, 24); // signals the beginning of humidity data and end of temp data
-      radio.send(int(round(humidity)), 24); 
+      radio.send(333, 24);                   // signals the beginning of humidity data and end of temp data
+      radio.send(int(round(humidity)), 24);  // send humidity data
       Serial.println(int(round(humidity)));
-      radio.send(111, 24); // signals the end of humidity data and beginning of temp data
-      
-      Serial.println("\nSent");
+      radio.send(111, 24);  // signals the end of humidity data and beginning of temp data
 
-      
+      Serial.println("\nSent");
     }
-    
   }
 }
 void updateDHT() {  // read humidity and temperature from DHT sensor
   if (currentMillis - prevDHTTime > DHTInterval || count == 1) {
     prevDHTTime = currentMillis;
-    
+
     digitalWrite(DHTPowerPin, 1);
     delay(100);
 
@@ -107,7 +103,5 @@ void updateDHT() {  // read humidity and temperature from DHT sensor
       Serial.println("%");
     }
     digitalWrite(DHTPowerPin, 0);
-
-
   }
 }
