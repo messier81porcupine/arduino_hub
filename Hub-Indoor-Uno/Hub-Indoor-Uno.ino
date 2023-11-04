@@ -148,69 +148,28 @@ void loop() {
     count = 2;
   }
 
-  // Force moisture sensor reading
+  // Force method calls
   buttonState = digitalRead(buttonPin);
   if (buttonState == 1) {
     delay(250);
   }
 
   // Method Call
+
   setBrightness();
   readMoistureSensor();
   setMoistureLED();
   updateDHT();
   now = updateRTC();
+  outputLCD(now);
   receiveData();
 
-  outputLCD(now);
   count++;
 }
 
 
 // Methods
-void receiveData() {
-  if (currentMillis - prevRadioTime > radioInterval || count == 1 || buttonState == 1) {
-    prevRadioTime = currentMillis;
 
-    if (count == 1) {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Searching");
-    }
-
-    for (int i = 0; i < loops - 1; i++) {
-      if (radio.available()) {
-        receivedVal = radio.getReceivedValue();
-        // Serial.print("\nReceived: ");
-        // Serial.println(receivedVal);
-      }
-      if (count == 1) {
-        lcd.setCursor(i + 9, 0);
-        lcd.print(".");
-      }
-      // set receiving mode based on what data is received
-      if (receivedVal == 111) {
-        receivingMode = 0;  // temp
-      } else if (receivedVal == 333) {
-        receivingMode = 1;         // humidity
-      } else {                     // if not 111(tmp) or 333(humid) then it must be normal data
-        if (receivingMode == 0) {  // save that data into the appropriate variable based on the most recent recieved code
-          outTemp = receivedVal;
-        } else if (receivingMode == 1) {
-          outHumidity = receivedVal;
-        }
-      }
-      Serial.println("\nRecieved\nDHT - Outdoor");
-      Serial.print(outTemp);
-      Serial.println("C");
-      Serial.print(outHumidity);
-      Serial.println("%");
-
-      radio.resetAvailable();
-      delay(delayMS);
-    }
-  }
-}
 void setBrightness() {  // read phototransistor and set brightness level accordingly
   if (currentMillis - prevTransTime > transInterval || count == 1 || buttonState == 1) {
     if (buttonState != 1) {
@@ -370,5 +329,49 @@ void outputLCD(DateTime now) {  // output all data onto LCD
     }
 
     lcd.print("%");
+  }
+}
+void receiveData() {
+  if (currentMillis - prevRadioTime > radioInterval || count == 1 || buttonState == 1) {
+    prevRadioTime = currentMillis;
+
+    if (count == 1) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Searching");
+    }
+
+    for (int i = 0; i < loops - 1; i++) {
+      
+      if (radio.available()) {
+        receivedVal = radio.getReceivedValue();
+        // Serial.print("\nReceived: ");
+        // Serial.println(receivedVal);
+      }
+      if (count == 1) {
+        lcd.setCursor(i + 9, 0);
+        lcd.print(".");
+      }
+      // set receiving mode based on what data is received
+      if (receivedVal == 111) {
+        receivingMode = 0;  // temp
+      } else if (receivedVal == 333) {
+        receivingMode = 1;         // humidity
+      } else {                     // if not 111(tmp) or 333(humid) then it must be normal data
+        if (receivingMode == 0) {  // save that data into the appropriate variable based on the most recent recieved code
+          outTemp = receivedVal;
+        } else if (receivingMode == 1) {
+          outHumidity = receivedVal;
+        }
+      }
+      Serial.println("\nRecieved\nDHT - Outdoor");
+      Serial.print(outTemp);
+      Serial.println("C");
+      Serial.print(outHumidity);
+      Serial.println("%");
+
+      radio.resetAvailable();
+      delay(delayMS);
+    }
   }
 }
