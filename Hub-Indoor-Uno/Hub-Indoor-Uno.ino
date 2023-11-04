@@ -37,9 +37,10 @@ const int photoTransPin = A2;
 const int moistureSensorPin = A0;
 const int moisturePowerPin = A1;
 
-const int redLED = 13;
+const int redLED = 12;
+const int onboardLED = 13;
 
-const int buttonPin = 12;
+const int buttonPin = 10;
 
 // Sensor Values - Thresholds
 int ambientBrightness;  // reading from phototransistor - used to set LCD backlight
@@ -74,6 +75,9 @@ unsigned long prevTime;                     // time of last moisture sensor read
 unsigned long LEDInterval = 2000;  // time to wait before flashing the red LED when Dry // 2 seconds
 unsigned long prevLEDTime;         // time of last red LED flash
 
+unsigned long onboardLEDInterval = 5000;  // time to wait before flickering the onboard LED // 5 seconds
+unsigned long prevOnboardTime;            // time of last onboard LED flash
+
 unsigned long RTCoutputInterval = 20000;  // time to wait between outputing the RTC data to the serial port // 20 seconds
 unsigned long prevRTCtime;                // time of last rtc output
 
@@ -102,6 +106,7 @@ void setup() {
   pinMode(moisturePowerPin, OUTPUT);
   pinMode(LCDBacklightPin, OUTPUT);
   pinMode(DHTPin, INPUT);
+  pinMode(onboardLED, OUTPUT);
 
   // Configure RTC
   if (!rtc.begin()) {
@@ -142,7 +147,7 @@ void setup() {
 
 void loop() {
   currentMillis = millis();
-
+  digitalWrite(onboardLED, 0);
   // Prevent count from overflowing
   if (count < 0) {
     count = 2;
@@ -151,7 +156,9 @@ void loop() {
   // Force method calls
   buttonState = digitalRead(buttonPin);
   if (buttonState == 1) {
+    digitalWrite(redLED, 1);
     delay(250);
+    digitalWrite(redLED, 0);
   }
 
   // Method Call
@@ -159,6 +166,7 @@ void loop() {
   setBrightness();
   readMoistureSensor();
   setMoistureLED();
+  flashOnboardLED();
   updateDHT();
   now = updateRTC();
   outputLCD(now);
@@ -212,6 +220,16 @@ void setMoistureLED() {  // set red LED according to moisture sensor value
 
   } else {
     digitalWrite(redLED, 0);
+  }
+}
+void flashOnboardLED() {  // flash onboard LED every so often
+  if (currentMillis - prevOnboardTime > onboardLEDInterval) {
+    prevOnboardTime = currentMillis;
+    Serial.println("FLASH");
+    digitalWrite(onboardLED, 1);
+    delay(200);
+  } else {
+    digitalWrite(onboardLED, 0);
   }
 }
 void updateDHT() {  // read humidity and temperature from DHT sensor
@@ -341,6 +359,8 @@ void receiveData() {
       lcd.print("Searching");
     }
 
+    digitalWrite(onboardLED, 1);
+    Serial.println("ON");
     for (int i = 0; i < loops - 1; i++) {
       
       if (radio.available()) {
@@ -373,5 +393,7 @@ void receiveData() {
       radio.resetAvailable();
       delay(delayMS);
     }
+    digitalWrite(onboardLED, 0);
+    Serial.println("OFF");
   }
 }
